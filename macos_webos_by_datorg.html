@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>webOS by Datorg</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1e1b4b, #312e81, #1e3a8a);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .top-menu-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 28px;
+            background: rgba(20, 20, 25, 0.55);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            color: #ffffff;
+            font-size: 13px;
+            z-index: 9999;
+        }
+
+        .menu-left, .menu-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .menu-item {
+            cursor: pointer;
+            padding: 2px 8px;
+            border-radius: 4px;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .apple-logo {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
+            border-radius: 3px;
+        }
+
+        .dock-container {
+            position: fixed;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 72px;
+            background: rgba(255, 255, 255, 0.12);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            gap: 10px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+            z-index: 9998;
+        }
+
+        .dock-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+        }
+
+        .dock-icon:hover {
+            transform: scale(1.25) translateY(-8px);
+        }
+
+        .dock-icon img {
+            width: 100%;
+            height: 100%;
+            border-radius: 14px;
+            object-fit: cover;
+        }
+
+        .dock-icon .tooltip {
+            position: absolute;
+            top: -38px;
+            background: rgba(30, 30, 35, 0.85);
+            color: white;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 6px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .dock-icon:hover .tooltip {
+            opacity: 1;
+        }
+
+        .dock-dot {
+            position: absolute;
+            bottom: -4px;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            display: none;
+        }
+
+        .dock-icon.active .dock-dot {
+            display: block;
+        }
+
+        .dock-divider {
+            width: 1px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 0 4px;
+        }
+
+        .window {
+            position: absolute;
+            top: 100px;
+            left: 120px;
+            width: 820px;
+            height: 540px;
+            background: rgba(30, 30, 36, 0.94);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 100;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .window.minimized {
+            opacity: 0;
+            transform: scale(0.8) translateY(250px);
+            pointer-events: none;
+        }
+
+        .window-header {
+            height: 38px;
+            background: rgba(45, 45, 52, 0.85);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            cursor: grab;
+        }
+
+        .window-header:active {
+            cursor: grabbing;
+        }
+
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .traffic-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: rgba(0,0,0,0.6);
+        }
+
+        .btn-close { background: #ff5f56; }
+        .btn-minimize { background: #ffbd2e; }
+        .btn-maximize { background: #27c93f; }
+
+        .traffic-btn i {
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .traffic-lights:hover .traffic-btn i {
+            opacity: 1;
+        }
+
+        .window-title {
+            flex-grow: 1;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 13px;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .window-content {
+            flex-grow: 1;
+            background: #18181c;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .finder-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            background: #1e1e24;
+            color: #ffffff;
+        }
+
+        .finder-sidebar {
+            width: 200px;
+            background: rgba(25, 25, 30, 0.7);
+            border-right: 1px solid rgba(255,255,255,0.08);
+            padding: 12px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            padding: 8px 8px 4px 8px;
+            font-weight: 600;
+        }
+
+        .sidebar-item {
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.85);
+        }
+
+        .sidebar-item:hover, .sidebar-item.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .finder-main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: #18181c;
+        }
+
+        .finder-pathbar {
+            height: 36px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 8px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .finder-grid {
+            flex-grow: 1;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 16px;
+            align-content: start;
+            overflow-y: auto;
+        }
+
+        .file-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .file-card:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.12);
+        }
+
+        .file-icon {
+            font-size: 38px;
+            margin-bottom: 8px;
+        }
+
+        .file-name {
+            font-size: 12px;
+            color: rgba(255,255,255,0.9);
+            word-break: break-word;
+        }
+
+        .dropdown-menu {
+            position: fixed;
+            top: 32px;
+            left: 12px;
+            width: 220px;
+            background: rgba(35, 35, 42, 0.95);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            display: none;
+            flex-direction: column;
+            padding: 6px;
+            z-index: 10000;
+        }
+
+        .dropdown-item {
+            padding: 8px 12px;
+            color: white;
+            font-size: 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dropdown-item:hover {
+            background: #007aff;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: rgba(255, 255, 255, 0.15);
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-menu-bar">
+        <div class="menu-left">
+            <div class="menu-item" id="appleMenuBtn">
+                <img src="logo.png" alt="logo" class="apple-logo" onerror="this.src='https://placehold.co/16x16/3b82f6/ffffff?text=OS'">
+            </div>
+            <div class="menu-item font-semibold" id="activeAppTitle">Finder</div>
+            <div class="menu-item hidden sm:block">File</div>
+            <div class="menu-item hidden sm:block">Edit</div>
+            <div class="menu-item hidden sm:block">View</div>
+            <div class="menu-item hidden sm:block">Window</div>
+            <div class="menu-item hidden sm:block">Help</div>
+        </div>
+        <div class="menu-right">
+            <div class="menu-item"><i class="fa-solid fa-wifi"></i></div>
+            <div class="menu-item"><i class="fa-solid fa-battery-three-quarters"></i></div>
+            <div class="menu-item" id="topClock">Mon Oct 12 12:24 PM</div>
+        </div>
+    </div>
+
+    <!-- Apple Dropdown Menu -->
+    <div class="dropdown-menu" id="appleDropdown">
+        <div class="dropdown-item" onclick="openWindow('settings')"><span>About webOS</span></div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" onclick="openWindow('settings')"><span>System Settings...</span></div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item text-red-400" onclick="window.close()"><span>Shut Down / Lock...</span></div>
+    </div>
+
+    <!-- Desktop Area -->
+    <div id="desktop" class="w-full h-full relative pt-7 pb-24">
+        <!-- Windows spawned dynamically -->
+    </div>
+
+    <div class="dock-container">
+        <div class="dock-icon" onclick="openWindow('finder')" title="Finder">
+            <div class="tooltip">Finder (PC)</div>
+            <img src="logo.png" alt="Finder" onerror="this.src='https://placehold.co/52x52/2563eb/ffffff?text=📁'">
+            <div class="dock-dot" id="dot-finder"></div>
+        </div>
+        <div class="dock-icon" onclick="openWindow('browser')" title="Helium Browser">
+            <div class="tooltip">Helium Browser</div>
+            <img src="logo.png" alt="Browser" onerror="this.src='https://placehold.co/52x52/0ea5e9/ffffff?text=🌐'">
+            <div class="dock-dot" id="dot-browser"></div>
+        </div>
+        <div class="dock-icon" onclick="openWindow('spotify')" title="Spotify">
+            <div class="tooltip">Spotify</div>
+            <img src="logo.png" alt="Spotify" onerror="this.src='https://placehold.co/52x52/15803d/ffffff?text=🎵'">
+            <div class="dock-dot" id="dot-spotify"></div>
+        </div>
+        <div class="dock-icon" onclick="openWindow('photopea')" title="edit.photo">
+            <div class="tooltip">edit.photo (Photopea)</div>
+            <img src="logo.png" alt="Photopea" onerror="this.src='https://placehold.co/52x52/d97706/ffffff?text=🎨'">
+            <div class="dock-dot" id="dot-photopea"></div>
+        </div>
+        <div class="dock-icon" onclick="openWindow('videoeditor')" title="edit.video">
+            <div class="tooltip">edit.video (CapCut)</div>
+            <img src="logo.png" alt="CapCut" onerror="this.src='https://placehold.co/52x52/9333ea/ffffff?text=🎬'">
+            <div class="dock-dot" id="dot-videoeditor"></div>
+        </div>
+        <div class="dock-divider"></div>
+        <div class="dock-icon" onclick="openWindow('settings')" title="Settings">
+            <div class="tooltip">Settings</div>
+            <img src="logo.png" alt="Settings" onerror="this.src='https://placehold.co/52x52/475569/ffffff?text=⚙️'">
+            <div class="dock-dot" id="dot-settings"></div>
+        </div>
+    </div>
+
+    <script>
+        const desktop = document.getElementById('desktop');
+        const appleMenuBtn = document.getElementById('appleMenuBtn');
+        const appleDropdown = document.getElementById('appleDropdown');
+        const activeAppTitle = document.getElementById('activeAppTitle');
+
+        let highestZIndex = 100;
+
+        // Virtual PC Directory structure matching local PC folder
+        const pcFilesystem = {
+            "PC": {
+                type: "folder",
+                children: {
+                    "Users": {
+                        type: "folder",
+                        children: {
+                            "Datorg": {
+                                type: "folder",
+                                children: {
+                                    "Documents": {
+                                        type: "folder",
+                                        children: {
+                                            "welcome.txt": { type: "file", icon: "📄", content: "Welcome to webOS by Datorg! This operating system runs directly inside your browser extension tab." },
+                                            "notes.txt": { type: "file", icon: "📝", content: "To-do: Build amazing web applications, test Chromium extensions, enjoy fast webOS experience." }
+                                        }
+                                    },
+                                    "Pictures": {
+                                        type: "folder",
+                                        children: {
+                                            "wallpaper-sample.jpg": { type: "file", icon: "🖼️", content: "Image preview: Gradient background sample." },
+                                            "logo.png": { type: "file", icon: "🎨", content: "System logo asset file." }
+                                        }
+                                    },
+                                    "Downloads": {
+                                        type: "folder",
+                                        children: {
+                                            "app-setup.zip": { type: "file", icon: "📦", content: "Compressed extension archive." }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "Applications": {
+                        type: "folder",
+                        children: {
+                            "Finder.app": { type: "app", key: "finder", icon: "📁" },
+                            "Browser.app": { type: "app", key: "browser", icon: "🌐" },
+                            "Spotify.app": { type: "app", key: "spotify", icon: "🎵" },
+                            "Photopea.app": { type: "app", key: "photopea", icon: "🎨" },
+                            "CapCut.app": { type: "app", key: "videoeditor", icon: "🎬" }
+                        }
+                    },
+                    "System": {
+                        type: "folder",
+                        children: {
+                            "Library": { type: "folder", children: {} },
+                            "CoreServices": { type: "folder", children: {} }
+                        }
+                    }
+                }
+            }
+        };
+
+        let currentDirectoryPath = ["PC"];
+
+        // Toggle Apple Menu
+        appleMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            appleDropdown.style.display = appleDropdown.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        window.addEventListener('click', () => {
+            appleDropdown.style.display = 'none';
+        });
+
+        appleDropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Helper to get current folder object
+        function getCurrentFolderObj() {
+            let curr = pcFilesystem;
+            for (let part of currentDirectoryPath) {
+                curr = curr[part];
+                if (curr && curr.children) curr = curr.children;
+            }
+            return curr || {};
+        }
+
+        // Render Finder View HTML
+        function renderFinderHTML() {
+            const folderObj = getCurrentFolderObj();
+            let gridHtml = '';
+            
+            for (let name in folderObj) {
+                let item = folderObj[name];
+                let iconSymbol = item.type === 'folder' ? '📁' : (item.icon || '📄');
+                gridHtml += `
+                    <div class="file-card" onclick="handleFileClick('${name}')">
+                        <div class="file-icon">${iconSymbol}</div>
+                        <div class="file-name">${name}</div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="finder-container">
+                    <div class="finder-sidebar">
+                        <div class="sidebar-section-title">Favorites</div>
+                        <div class="sidebar-item ${currentDirectoryPath.length === 1 ? 'active' : ''}" onclick="navigateToPath(['PC'])"><i class="fa-solid fa-house"></i> PC Root</div>
+                        <div class="sidebar-item" onclick="navigateToPath(['PC', 'Users', 'Datorg', 'Documents'])"><i class="fa-solid fa-folder"></i> Documents</div>
+                        <div class="sidebar-item" onclick="navigateToPath(['PC', 'Users', 'Datorg', 'Pictures'])"><i class="fa-solid fa-image"></i> Pictures</div>
+                        <div class="sidebar-item" onclick="navigateToPath(['PC', 'Applications'])"><i class="fa-solid fa-rocket"></i> Applications</div>
+                    </div>
+                    <div class="finder-main">
+                        <div class="finder-pathbar">
+                            <i class="fa-solid fa-folder-open text-blue-400"></i>
+                            <span>${currentDirectoryPath.join(' / ')}</span>
+                        </div>
+                        <div class="finder-grid">
+                            ${gridHtml || '<div class="text-gray-400 text-sm italic col-span-full text-center mt-8">This folder is empty.</div>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.navigateToPath = function(pathArr) {
+            currentDirectoryPath = pathArr;
+            const finderWin = document.getElementById('window-finder');
+            if (finderWin) {
+                const contentDiv = finderWin.querySelector('.window-content');
+                if (contentDiv) contentDiv.innerHTML = renderFinderHTML();
+            }
+        };
+
+        window.handleFileClick = function(name) {
+            let folderObj = getCurrentFolderObj();
+            let item = folderObj[name];
+            if (!item) return;
+
+            if (item.type === 'folder') {
+                currentDirectoryPath.push(name);
+                const finderWin = document.getElementById('window-finder');
+                if (finderWin) {
+                    finderWin.querySelector('.window-content').innerHTML = renderFinderHTML();
+                }
+            } else if (item.type === 'app') {
+                openWindow(item.key);
+            } else if (item.type === 'file') {
+                openFileViewerWindow(name, item.content);
+            }
+        };
+
+        function openFileViewerWindow(fileName, content) {
+            const winId = 'file-' + Math.random().toString(36).substring(2, 7);
+            const win = document.createElement('div');
+            win.id = winId;
+            win.className = 'window';
+            win.style.top = (120 + Math.random() * 30) + 'px';
+            win.style.left = (200 + Math.random() * 40) + 'px';
+            win.style.width = '450px';
+            win.style.height = '320px';
+            win.style.zIndex = ++highestZIndex;
+
+            win.innerHTML = `
+                <div class="window-header" onmousedown="startDrag(event, '${winId}')">
+                    <div class="traffic-lights">
+                        <button class="traffic-btn btn-close" onclick="document.getElementById('${winId}').remove()"><i class="fa-solid fa-xmark"></i></button>
+                        <button class="traffic-btn btn-minimize" onclick="document.getElementById('${winId}').classList.add('minimized')"><i class="fa-solid fa-minus"></i></button>
+                        <button class="traffic-btn btn-maximize"><i class="fa-solid fa-expand"></i></button>
+                    </div>
+                    <div class="window-title">${fileName}</div>
+                </div>
+                <div class="window-content p-6 text-white bg-[#1e1e24] flex flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <i class="fa-solid fa-file-lines text-3xl text-blue-400"></i>
+                        <div>
+                            <h3 class="font-bold text-sm">${fileName}</h3>
+                            <p class="text-xs text-gray-400">Text Document</p>
+                        </div>
+                    </div>
+                    <div class="bg-black/30 p-4 rounded-lg flex-grow border border-white/10 text-sm text-gray-200 font-mono overflow-y-auto">
+                        ${content}
+                    </div>
+                </div>
+            `;
+            win.addEventListener('mousedown', () => bringToFront(win));
+            desktop.appendChild(win);
+        }
+
+        // App Configurations with robust embedding & fallback handling
+        const appConfigs = {
+            finder: {
+                title: 'Finder - PC Directory',
+                getContent: () => renderFinderHTML()
+            },
+            browser: {
+                title: 'Helium Browser',
+                getContent: () => `
+                    <div class="w-full h-full flex flex-col bg-[#1e1e24] text-white">
+                        <div class="h-12 bg-[#2d2d34] border-b border-white/10 flex items-center px-4 gap-3">
+                            <div class="flex gap-2 text-gray-400">
+                                <i class="fa-solid fa-arrow-left cursor-pointer hover:text-white"></i>
+                                <i class="fa-solid fa-arrow-right cursor-pointer hover:text-white"></i>
+                                <i class="fa-solid fa-rotate-right cursor-pointer hover:text-white"></i>
+                            </div>
+                            <div class="flex-grow bg-[#18181c] border border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-300 flex items-center gap-2">
+                                <i class="fa-solid fa-lock text-green-400 text-[10px]"></i>
+                                <span class="font-mono">https://lite.duckduckgo.com</span>
+                            </div>
+                        </div>
+                        <div class="flex-grow relative bg-white">
+                            <iframe src="https://lite.duckduckgo.com/lite/" class="w-full h-full border-none"></iframe>
+                        </div>
+                    </div>
+                `
+            },
+            spotify: {
+                title: 'Spotify Web Player',
+                getContent: () => `
+                    <div class="w-full h-full flex flex-col items-center justify-center p-8 bg-[#121212] text-white text-center">
+                        <div class="w-20 h-20 bg-green-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-green-500/20">
+                            <i class="fa-brands fa-spotify text-5xl text-black"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold mb-2">Spotify Web Player</h2>
+                        <p class="text-gray-400 text-sm max-w-md mb-6">Spotify blocks direct iframe embedding due to security policies. Launch the official web app in a popup tab or enjoy built-in audio tracks!</p>
+                        <div class="flex gap-4">
+                            <a href="https://open.spotify.com" target="_blank" class="bg-green-500 hover:bg-green-400 text-black font-semibold px-6 py-2.5 rounded-full text-sm transition shadow-lg inline-flex items-center gap-2">
+                                <i class="fa-solid fa-external-link-alt"></i> Open Spotify App
+                            </a>
+                        </div>
+                    </div>
+                `
+            },
+            photopea: {
+                title: 'edit.photo (Photopea)',
+                getContent: () => `
+                    <div class="w-full h-full flex flex-col bg-[#27272a] text-white">
+                        <div class="p-3 bg-[#18181b] border-b border-white/10 flex justify-between items-center text-xs">
+                            <span class="font-bold flex items-center gap-2"><i class="fa-solid fa-palette text-amber-400"></i> edit.photo (Photopea Workspace)</span>
+                            <a href="https://www.photopea.com" target="_blank" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1 rounded transition">Open Fullscreen</a>
+                        </div>
+                        <div class="flex-grow relative">
+                            <iframe src="https://www.photopea.com" width="100%" height="100%" class="w-full h-full border-none"></iframe>
+                        </div>
+                    </div>
+                `
+            },
+            videoeditor: {
+                title: 'edit.video (CapCut Web)',
+                getContent: () => `
+                    <div class="w-full h-full flex flex-col bg-[#1e1b4b] text-white">
+                        <div class="p-3 bg-[#17153a] border-b border-white/10 flex justify-between items-center text-xs">
+                            <span class="font-bold flex items-center gap-2"><i class="fa-solid fa-film text-purple-400"></i> edit.video (CapCut Studio)</span>
+                            <a href="https://www.capcut.com/tools/online-video-editor" target="_blank" class="bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded transition">Open Fullscreen</a>
+                        </div>
+                        <div class="flex-grow flex flex-col items-center justify-center p-8 text-center bg-gradient-to-br from-indigo-950 to-purple-950">
+                            <div class="w-16 h-16 bg-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-xl">
+                                <i class="fa-solid fa-video text-3xl text-white"></i>
+                            </div>
+                            <h3 class="text-xl font-bold mb-2">CapCut Online Video Editor</h3>
+                            <p class="text-sm text-purple-200 max-w-sm mb-6">Edit videos, add transitions, music, and export clips directly inside your browser operating system.</p>
+                            <a href="https://www.capcut.com/tools/online-video-editor" target="_blank" class="bg-white text-purple-950 font-bold px-6 py-2.5 rounded-full text-sm shadow-lg hover:bg-purple-100 transition">Launch Editor Tab</a>
+                        </div>
+                    </div>
+                `
+            },
+            settings: {
+                title: 'System Settings',
+                getContent: () => `
+                    <div class="p-8 text-white max-w-lg">
+                        <div class="flex items-center gap-4 mb-6 pb-6 border-b border-white/10">
+                            <img src="logo.png" class="w-16 h-16 rounded-2xl object-cover shadow-lg" onerror="this.src='https://placehold.co/64x64/3b82f6/ffffff?text=OS'">
+                            <div>
+                                <h2 class="text-xl font-bold">webOS by Datorg</h2>
+                                <p class="text-sm text-gray-400">Version 1.0.0 (Chromium Extension)</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4 text-sm">
+                            <div class="flex justify-between py-2 border-b border-white/5">
+                                <span class="text-gray-400">Operating System</span>
+                                <span class="font-medium">macOS Sonoma Theme</span>
+                            </div>
+                            <div class="flex justify-between py-2 border-b border-white/5">
+                                <span class="text-gray-400">Virtual Directory</span>
+                                <span class="font-medium">/PC/ (Users, Applications)</span>
+                            </div>
+                            <div class="flex justify-between py-2">
+                                <span class="text-gray-400">Memory Status</span>
+                                <span class="text-green-400 font-medium">Optimized & Running Smoothly</span>
+                            </div>
+                        </div>
+                    </div>
+                `
+            }
+        };
+
+        // Open Window Function
+        window.openWindow = function(appKey) {
+            appleDropdown.style.display = 'none';
+            let existingWindow = document.getElementById('window-' + appKey);
+            
+            if (existingWindow) {
+                existingWindow.classList.remove('minimized');
+                bringToFront(existingWindow);
+                return;
+            }
+
+            const config = appConfigs[appKey];
+            const win = document.createElement('div');
+            win.id = 'window-' + appKey;
+            win.className = 'window';
+            win.style.top = (80 + Math.random() * 30) + 'px';
+            win.style.left = (140 + Math.random() * 50) + 'px';
+            win.style.zIndex = ++highestZIndex;
+
+            win.innerHTML = `
+                <div class="window-header" onmousedown="startDrag(event, '${win.id}')">
+                    <div class="traffic-lights">
+                        <button class="traffic-btn btn-close" onclick="closeWindow('${appKey}')"><i class="fa-solid fa-xmark"></i></button>
+                        <button class="traffic-btn btn-minimize" onclick="minimizeWindow('${appKey}')"><i class="fa-solid fa-minus"></i></button>
+                        <button class="traffic-btn btn-maximize" onclick="maximizeWindow('${appKey}')"><i class="fa-solid fa-expand"></i></button>
+                    </div>
+                    <div class="window-title">${config.title}</div>
+                </div>
+                <div class="window-content">
+                    ${config.getContent()}
+                </div>
+            `;
+
+            win.addEventListener('mousedown', () => bringToFront(win));
+            desktop.appendChild(win);
+
+            const dot = document.getElementById('dot-' + appKey);
+            if (dot && dot.parentElement) dot.parentElement.classList.add('active');
+            activeAppTitle.textContent = config.title;
+        }
+
+        window.closeWindow = function(appKey) {
+            const win = document.getElementById('window-' + appKey);
+            if (win) {
+                win.remove();
+                const dot = document.getElementById('dot-' + appKey);
+                if (dot && dot.parentElement) dot.parentElement.classList.remove('active');
+                activeAppTitle.textContent = 'Finder';
+            }
+        }
+
+        window.minimizeWindow = function(appKey) {
+            const win = document.getElementById('window-' + appKey);
+            if (win) win.classList.add('minimized');
+        }
+
+        window.maximizeWindow = function(appKey) {
+            const win = document.getElementById('window-' + appKey);
+            if (win) {
+                if (win.style.width === '100%') {
+                    win.style.width = '820px';
+                    win.style.height = '540px';
+                    win.style.top = '100px';
+                    win.style.left = '140px';
+                } else {
+                    win.style.width = '100%';
+                    win.style.height = 'calc(100vh - 28px)';
+                    win.style.top = '28px';
+                    win.style.left = '0';
+                }
+            }
+        }
+
+        window.bringToFront = function(win) {
+            win.style.zIndex = ++highestZIndex;
+            const titleEl = win.querySelector('.window-title');
+            if (titleEl) activeAppTitle.textContent = titleEl.textContent;
+        }
+
+        // Draggable Windows Logic
+        window.startDrag = function(e, winId) {
+            const win = document.getElementById(winId);
+            bringToFront(win);
+            
+            let startX = e.clientX;
+            let startY = e.clientY;
+            let rect = win.getBoundingClientRect();
+
+            function onMouseMove(e) {
+                let dx = e.clientX - startX;
+                let dy = e.clientY - startY;
+                win.style.left = Math.max(0, rect.left + dx) + 'px';
+                win.style.top = Math.max(28, rect.top + dy) + 'px';
+            }
+
+            function onMouseUp() {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            }
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        }
+
+        // Clock Update
+        function updateTopClock() {
+            const now = new Date();
+            const options = { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+            const clockEl = document.getElementById('topClock');
+            if (clockEl) clockEl.textContent = now.toLocaleDateString('en-US', options);
+        }
+        setInterval(updateTopClock, 1000);
+        updateTopClock();
+    </script>
+</body>
+</html>
